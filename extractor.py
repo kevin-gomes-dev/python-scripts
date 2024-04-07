@@ -63,7 +63,6 @@ def reverseChanges(movesFile):
         fileTo = os.path.normpath(moves[i].decode("utf-8"))
         try:
             os.rename(fileFrom,fileTo)
-            # continue
         except:
             print("Will not move " + fileFrom + " to " + fileTo)
     fp.close()
@@ -106,7 +105,6 @@ def main(base,extractTo):
                     try:
                         writeMove(fp,fileFrom,fileTo)
                         os.rename(fileFrom.decode("utf-8"),fileTo.decode("utf-8"))
-                        continue
                     except:
                         print("Either the moving info wasn't written, or the file failed to move. Will not move " + fileFrom.decode("utf-8") + " to " + fileTo.decode("utf-8"))
     fp.close()
