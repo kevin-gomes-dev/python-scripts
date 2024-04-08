@@ -56,7 +56,8 @@ def reverseChanges(movesFile):
     # Possibly make them from and to pairs of tuples?
     for line in fp:
         moves.append(line.strip())
-    print("Retrieved all directories to move to and from. Now attempting all moves...")
+    print("Retrieved all directories to reverse moves. Now attempting all moves.")
+    print()
     for i in range(0,len(moves),2):
         # Use extracted path as the one we come from, and the base path as the one we go to.
         fileFrom = os.path.normpath(moves[i+1].decode("utf-8"))
@@ -65,6 +66,7 @@ def reverseChanges(movesFile):
             os.rename(fileFrom,fileTo)
         except:
             print("Will not reverse " + fileFrom + " to " + fileTo + ", perhaps file or path doesn't exist?")
+    print("Done reversing moves!")
     fp.close()
 
 def main(base,extractTo):
@@ -84,6 +86,7 @@ def main(base,extractTo):
         print("An error occured when trying to open the moves.txt file.")
         return False
     print("Moving all files from base and subdirectories into extract directory.")
+    print()
     tuples = os.walk(newBase)
     for i,j,k in tuples:
         # If we have a files list in the current directory we are in, check it's extension against allowed extensions and move to extractTo dir
@@ -98,19 +101,22 @@ def main(base,extractTo):
                     try:
                         # First check if file exists. If so, add something to make it unique. Copying windows naming of (1) (2) etc...
                         if os.path.exists(fileTo):
+                            print(fileTo + " already exists. Will add number to ensure unique filename.")
                             count = 1
                             while True:
                                 # Something like "sample (1).txt or sample (4).txt"
                                 newFileName = fileName + " (" + str(count) + ")" + ext
                                 fileTo = os.path.join(newExtractTo,newFileName)
                                 if not os.path.exists(fileTo):
+                                    print("Final name: " + newFileName)
                                     break
                                 count += 1        
                         writeMove(fp,fileFrom.encode("utf-8"),fileTo.encode("utf-8"))
                         os.rename(fileFrom,fileTo)
                     except:
                         print("Either the moving info failed attempting write, or the file failed to move. Will not move " + fileFrom + " to " + fileTo)
+    print("Done moving all files!")
     fp.close()
-              
+
 # main(r"base",r"extractTo")
 # reverseChanges(r"path/moves.txt")
