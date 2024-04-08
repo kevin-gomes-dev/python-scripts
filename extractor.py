@@ -37,7 +37,7 @@ def writeMove(fp,comeFrom,goTo):
     writeLine = comeFrom + newLine + goTo + newLine
     fp.seek(0)
     if writeLine in fp.read():
-        print("Did not write move of " + comeFrom.decode("utf-8") + " as it was already there. Still attempting file move.")
+        print("Will attempt file move, but did not write move of " + comeFrom.decode("utf-8") + " as it was already there.")
         return False
     fp.write(writeLine)
     
@@ -72,7 +72,7 @@ def main(base,extractTo):
     newBase = os.path.normpath(base)
     newExtractTo = os.path.normpath(extractTo)
     # extensions we will look for
-    exts = ["ogg","mp3","m4a","aac","mp4"]
+    exts = [".ogg",".mp3",".m4a",".aac",".mp4",".txt"]
     if not checkDirectories(newBase,newExtractTo):
         print("Both directories do not exist or path is not in correct form.")
         return False
@@ -112,5 +112,5 @@ def main(base,extractTo):
                         print("Either the moving info failed attempting write, or the file failed to move. Will not move " + fileFrom + " to " + fileTo)
     fp.close()
               
-# main(r"base",r"extract")
+# main(r"base",r"extractTo")
 # reverseChanges(r"path/moves.txt")
