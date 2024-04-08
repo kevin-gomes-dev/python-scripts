@@ -1,6 +1,6 @@
-# Cross platform and handles unique utf-8 filenames. Does not handle duplicate filenames (won't move)
-# Extract all files of a certain type from the path given as well as all subfolders. They are extracted at the other path given.
-# All original paths are put in a file to be able to undo this and restore their paths. The subfolders will not be deleted.
+# Cross platform and handles unique utf-8 filenames. For duplicate names, adds a (count) to the end where count is 1 or 2 or 3...
+# Extract all files of a certain type from the path given as well as all subdirectories. They are extracted at the other path given.
+# All original paths are put in a file to be able to undo this and restore their paths. The subdirectories will not be deleted.
 # That way we can keep moving stuff and have a running list of all the moves to reverse more than once
 # Use bytes instead of strings for utf-8 encoding (many artists not in English, special characters in song names, etc.)
 # TODO: Add either text interface for options, changing exts, reverse/move, etc. OR create a gui with buttons for this. See QtWidget?
@@ -9,8 +9,8 @@
 
 import os
 
-def checkDirectories(baseFolder = "",extractToFolder = ""):
-    if not (os.path.isdir(baseFolder) and os.path.isdir(extractToFolder)):
+def checkDirectories(baseDir = "",extractToDir = ""):
+    if not (os.path.isdir(baseDir) and os.path.isdir(extractToDir)):
         return False
     return True
     
@@ -64,7 +64,7 @@ def reverseChanges(movesFile):
         try:
             os.rename(fileFrom,fileTo)
         except:
-            print("Will not move " + fileFrom + " to " + fileTo)
+            print("Will not reverse " + fileFrom + " to " + fileTo + ", perhaps file or path doesn't exist?")
     fp.close()
 
 def main(base,extractTo):
@@ -76,7 +76,7 @@ def main(base,extractTo):
     if not checkDirectories(newBase,newExtractTo):
         print("Both directories do not exist or path is not in correct form.")
         return False
-    print("Both directories exist. Making list of moves in extract directory folder if file doesn't exist.")
+    print("Both directories exist. Making list of moves in extract directory if file doesn't exist.")
     # If we can't open the moves list file, return False
     try:
         fp = open(createMoves(newExtractTo),"+ba")
@@ -90,24 +90,27 @@ def main(base,extractTo):
         # Also write where it came from and where it went in the list of moves file
         if k:
             for file in k:
-                # index of last . from the right (so 3 letter extension would give us 3)
-                ext = file[::-1].index(".")
-                # all letters after last . (the exentsion of the file)
-                # -index of last . gets us to last ., exclusive (so .txt would give us txt)
-                ext = file[-ext:]
+                fileName,ext = os.path.splitext(file)
                 if ext in exts:
-                    # start getting file to extracted folder
-                    # note we can't reverse, need to store comingFrom and goingTo renames so we can reverse
-                    # If the entry doesn't exist, store it in some txt file?
-                    fileFrom = os.path.join(i,file).encode("utf-8")
-                    fileTo = os.path.join(newExtractTo,file).encode("utf-8")
-                    
+                    # start getting file to extract directory
+                    fileFrom = os.path.join(i,file)
+                    fileTo = os.path.join(newExtractTo,file)
                     try:
-                        writeMove(fp,fileFrom,fileTo)
-                        os.rename(fileFrom.decode("utf-8"),fileTo.decode("utf-8"))
+                        # First check if file exists. If so, add something to make it unique. Copying windows naming of (1) (2) etc...
+                        if os.path.exists(fileTo):
+                            count = 1
+                            while True:
+                                # Something like "sample (1).txt or sample (4).txt"
+                                newFileName = fileName + " (" + str(count) + ")" + ext
+                                fileTo = os.path.join(newExtractTo,newFileName)
+                                if not os.path.exists(fileTo):
+                                    break
+                                count += 1        
+                        writeMove(fp,fileFrom.encode("utf-8"),fileTo.encode("utf-8"))
+                        os.rename(fileFrom,fileTo)
                     except:
-                        print("Either the moving info wasn't written, or the file failed to move. Will not move " + fileFrom.decode("utf-8") + " to " + fileTo.decode("utf-8"))
+                        print("Either the moving info failed attempting write, or the file failed to move. Will not move " + fileFrom + " to " + fileTo)
     fp.close()
-                    
-# main(basePath,extractPath)
-# reverseChanges(movestxtPath)
+              
+# main(r"base",r"extract")
+# reverseChanges(r"path/moves.txt")
