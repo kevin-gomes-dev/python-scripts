@@ -8,8 +8,14 @@
 # Created by Kevin Gomes
 
 import os
+import sys
+
+def fixPath(path):
+    return os.path.normpath(os.path.realpath(path))
 
 def checkDirectories(baseDir = "",extractToDir = ""):
+    if baseDir == extractToDir:
+        return False
     if not (os.path.isdir(baseDir) and os.path.isdir(extractToDir)):
         return False
     return True
@@ -41,6 +47,44 @@ def writeMove(fp,comeFrom,goTo):
         return False
     fp.write(writeLine)
     
+# Check arguments length and values. Returns true if valid, false otherwise
+def checkArgs():
+    args = sys.argv
+    # at least 2 args
+    if len(args) < 3:
+        print("Did not pass correct amount of arguments.")
+        return False
+    mode = args[1]
+    
+    # mode incorrect
+    if mode != "extract" and mode != "reverse":
+        print("Mode: " + mode)
+        print("Mode expected to be either 'extract' or 'reverse'")
+        return False
+    
+    if mode == "extract":
+        # mode was extract, but not enough args
+        if len(args) != 4:
+            print("When extracting, expected 2 directories. One base, one to extract to.")
+            return False
+    
+        # dirs not legal in extract
+        path1 = fixPath(args[2])
+        path2 = fixPath(args[3])
+        print("Extract base: " + path1)
+        print("Extracting to: " + path2)
+        if not checkDirectories(path1,path2):
+            print("One or both directories don't exist or are the same. Use quotation marks around paths to avoid OS specific ambiguity.")
+            return False
+        
+    # dir and reversal txt file are not supplied
+    if mode == "reverse":
+        movesFile = fixPath(args[2])
+        if not os.path.isfile(movesFile):
+            print("Didn't supply a reversal txt (most likely moves.txt)")
+            return False
+    return True
+
 # Read the moves.txt file, and move every file in the extracted dir to the base dir.
 def reverseChanges(movesFile):
     try:
@@ -53,15 +97,15 @@ def reverseChanges(movesFile):
     # Add every line (moved from, move to) to our list. Each read also moves the position we are at, and after reading all,
     # Position will be back at the end where it started when we opened the file for append
     # Since every line is a path in the order From, To, From, To, etc., create a list of pairs. We are guaranteed to have even number of items
-    # Possibly make them from and to pairs of tuples?
+    # Possibly make them from and to pairs of tuples? Or [[from,to],[from,to]]?
     for line in fp:
         moves.append(line.strip())
     print("Retrieved all directories to reverse moves. Now attempting all moves.")
     print()
     for i in range(0,len(moves),2):
         # Use extracted path as the one we come from, and the base path as the one we go to.
-        fileFrom = os.path.normpath(moves[i+1].decode("utf-8"))
-        fileTo = os.path.normpath(moves[i].decode("utf-8"))
+        fileFrom = fixPath(moves[i+1].decode("utf-8"))
+        fileTo = fixPath(moves[i].decode("utf-8"))
         try:
             os.rename(fileFrom,fileTo)
         except:
@@ -69,25 +113,32 @@ def reverseChanges(movesFile):
     print("Done reversing moves!")
     fp.close()
 
-def main(base,extractTo):
+def main():
+    if not checkArgs():
+        print("Something went wrong checking arguments. Check error message above. If none, create issue on github")
+        return False
+    mode = sys.argv[1]
+    if mode == "reverse":
+        reverseChanges(sys.argv[2])
+        return True
     # Normalize paths
-    newBase = os.path.normpath(base)
-    newExtractTo = os.path.normpath(extractTo)
+    base = fixPath(sys.argv[2])
+    extractTo = fixPath(sys.argv[3])
     # extensions we will look for
-    exts = [".ogg",".mp3",".m4a",".aac",".mp4",".txt"]
-    if not checkDirectories(newBase,newExtractTo):
-        print("Both directories do not exist or path is not in correct form.")
+    exts = [".ogg",".mp3",".m4a",".aac",".mp4"]
+    if not checkDirectories(base,extractTo):
+        print("Both directories do not exist or are exactly the same.")
         return False
     print("Both directories exist. Making list of moves in extract directory if file doesn't exist.")
     # If we can't open the moves list file, return False
     try:
-        fp = open(createMoves(newExtractTo),"+ba")
+        fp = open(createMoves(extractTo),"+ba")
     except:
         print("An error occured when trying to open the moves.txt file.")
         return False
     print("Moving all files from base and subdirectories into extract directory.")
     print()
-    tuples = os.walk(newBase)
+    tuples = os.walk(base)
     for i,j,k in tuples:
         # If we have a files list in the current directory we are in, check it's extension against allowed extensions and move to extractTo dir
         # Also write where it came from and where it went in the list of moves file
@@ -97,7 +148,7 @@ def main(base,extractTo):
                 if ext in exts:
                     # start getting file to extract directory
                     fileFrom = os.path.join(i,file)
-                    fileTo = os.path.join(newExtractTo,file)
+                    fileTo = os.path.join(extractTo,file)
                     try:
                         # First check if file exists. If so, add something to make it unique. Copying windows naming of (1) (2) etc...
                         if os.path.exists(fileTo):
@@ -106,7 +157,7 @@ def main(base,extractTo):
                             while True:
                                 # Something like "sample (1).txt or sample (4).txt"
                                 newFileName = fileName + " (" + str(count) + ")" + ext
-                                fileTo = os.path.join(newExtractTo,newFileName)
+                                fileTo = os.path.join(extractTo,newFileName)
                                 if not os.path.exists(fileTo):
                                     print("Final name: " + newFileName)
                                     break
@@ -118,5 +169,7 @@ def main(base,extractTo):
     print("Done moving all files!")
     fp.close()
 
-# main(r"base",r"extractTo")
-# reverseChanges(r"path/moves.txt")
+def test():
+    checkArgs()
+
+main()
