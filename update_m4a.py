@@ -2,6 +2,7 @@
 # The new file's metadata is updated such that "title" tag is changed to the original filename.
 # We encode with utf-8 to ensure any symbols or different languages remain intact.
 # TODO: Allow other extensions besides .m4a. Create list of extensions, check against list and rename files as such.
+import sys
 import pydub
 import os
 import pydub.utils
@@ -37,7 +38,6 @@ def update_m4a(input_file):
 
     # Update metadata to have "title" in TAG dict replaced with new title.
     metadata["TAG"].update({"title": new_title})
-    # print(metadata)
 
     # Get bitrate for exporting
     bitrate = metadata["bit_rate"]
@@ -67,6 +67,7 @@ def update_all_m4a(directory):
                     num_gen += 1
                 except Exception:
                     print("Error: Failed to update or export " + file + ". Check it out.")
+                    raise
                 # Print time taken per file.
                 file_time_taken = time.perf_counter() - file_start
                 print("Time taken: "+ str(file_time_taken) + " seconds, "+str(file_time_taken/float(60.0)) + " minutes.")
@@ -75,6 +76,14 @@ def update_all_m4a(directory):
     print("\nDone! Total time taken: "+ str(time_taken) + " seconds, "+str(time_taken/float(60.0)) + " minutes.")
     print("Total exports: " + str(num_gen))
     
-    
-# update_m4a('C:/Users/Kevin/Desktop/downloads/Adrenaline.m4a')
-update_all_m4a('C:/Users/Kevin/Desktop/test')
+def main():
+    args = sys.argv
+    if len(args) != 2:
+        print ("Incorrect number of args passed. Expected directory of m4a files.")
+        return
+    try:
+        update_all_m4a((args[1]))
+    except:
+        print("exception")
+        raise
+main()
